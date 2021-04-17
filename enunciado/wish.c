@@ -7,7 +7,10 @@
 #include <string.h>
 
 #define MAX_SIZE 100
-
+char *system_path_commands[] = {
+    "/bin/",
+    NULL
+};
 typedef enum {jason,abril, diana , endup,not_command,ls} builtin_command; 
 const static struct{
     builtin_command command;
@@ -59,14 +62,23 @@ int main(int argc, char*argv[]){
                     printf("diana executed\n");
                     break;
                 case endup:
-                    printf("endup executed\n");
+                    exit(0);
                     break;
                 default: 
                     printf("Command not found \n");
             }
         }else{
-
-            printf("Buscar el comando en la ruta patth \n");
+            int i = 0;
+            char pathToFile[MAX_SIZE]; 
+            int returnValue = -1;
+            while (*(system_path_commands + i) != NULL && returnValue != -1)
+            {   
+                strcpy(pathToFile,(system_path_commands + i));
+                strcat(pathToFile,str);
+                returnValue =access(pathToFile,X_OK);
+            }
+            
+            
         }
         
         
