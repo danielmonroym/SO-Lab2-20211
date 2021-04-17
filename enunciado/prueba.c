@@ -4,18 +4,18 @@
 
 
 
-int main(int argc, char *argv[]) {
-
-   char *arguments[argc];
-   
-      for(int i = 0; i < argc; i++){
-          arguments[i]=argv[i+1];
-      }
+int main(int argc) {  
     
-     char *args[] = {argv[0], NULL};
-
-  execvp(argv[1], arguments);
- 
+    char *system_path_commands[] = {
+    "/bin/",
+    NULL
+};
+char *cmd = "ls";
+char *argv[3];
+argv[0] = "ls";
+argv[1] = "-la";
+argv[2] = NULL;
+    execvp(argv[0],argv);
   return 0;
 
 }
