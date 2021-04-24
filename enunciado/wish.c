@@ -25,8 +25,9 @@ typedef enum
 void parseString(char str[], char *vector[30], int numberOfFlags);
 void cdWish(char **args);
 void pathWish(char **args);
+void executer(char *cmd[]);
 
-    const static struct
+const static struct
 {
     builtin_command command;
     char *string_command;
@@ -37,7 +38,6 @@ void pathWish(char **args);
     {endup, "exit"},
     {d, "d"},
     {ls, "ls"},
-
 };
 
 builtin_command str_to_command(char *strcommand)
@@ -54,6 +54,7 @@ builtin_command str_to_command(char *strcommand)
 
 int main(int argc, char *argv[])
 {
+
     char str[MAX_SIZE];
     do
     {
@@ -108,29 +109,7 @@ int main(int argc, char *argv[])
             }
             if (returnValue != -1)
             {
-                printf("Melo %s \n", pathToFile);
-                int rc = fork();
-                if (rc < 0)
-                {
-                    // fork failed; exit
-                    fprintf(stderr, "fork failed\n");
-                    exit(1);
-                }
-                else if (rc == 0)
-                {
-                    // child (new process)
-                    printf("hello, I am child (pid:%d)\n", (int)getpid());
-                    execvp(cmd[0], cmd); // runs word count
-                    printf("this shouldn't print out");
-                }
-                else
-                {
-                    // parent goes down this path (original process)
-                    int wc = wait(NULL);
-                    printf("hello, I am parent of %d (wc:%d) (pid:%d)\n",
-                           rc, wc, (int)getpid());
-                }
-                //execvp(command[0], command);
+                executer(cmd);
             }
             else
             {
@@ -158,7 +137,7 @@ void cdWish(char **args)
             }
             else
             {
-                perror("getcwd() error");
+                error("getcwd() error");
             }
         }
     }
@@ -187,12 +166,11 @@ void parseString(char str[], char *vector[30], int numberOfFlags)
         vector[loop] = command[loop];
     }
 }
-
 void pathWish(char **args)
 {
     if (system_path_commands[0] != NULL)
-        
-    system_path_commands[0] = (char **)malloc(sizeof(char *));
+
+        system_path_commands[0] = (char **)malloc(sizeof(char *));
     char *path_name = NULL;
     int index = 0;
     char **p = args;
@@ -205,4 +183,43 @@ void pathWish(char **args)
         system_path_commands[0] = (char **)realloc(system_path_commands[0], (index + 1) * sizeof(char *));
     }
     system_path_commands[0][index] = NULL;
+}
+void executer(char *cmd[]){
+
+                char *auxcmd[30];
+                int index = 0;
+                int auxIndex = 0;
+                while (cmd[index] != NULL)
+                {
+                    if (!strcmp(cmd[index], "&") || cmd[index + 1] == NULL)
+                    {
+                        int rc = fork();
+                        if (rc < 0)
+                        {
+                            fprintf(stderr, "fork failed\n");
+                            exit(1);
+                        }
+                        else if (rc == 0)
+                        {
+                            if (cmd[index + 1] == NULL)
+                            {
+                                auxcmd[auxIndex] = cmd[index];
+                                auxIndex++;
+                            }
+                            auxcmd[auxIndex] = NULL;
+                            execvp(auxcmd[0], auxcmd); // runs word count
+                        }
+                        else
+                        {
+                            wait(NULL);
+                            auxIndex = 0;
+                        }
+                    }
+                    else
+                    {
+                        auxcmd[auxIndex] = cmd[index];
+                        auxIndex++;
+                    }
+                    index++;
+                }
 }
