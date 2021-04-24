@@ -7,6 +7,8 @@
 #include <string.h>
 
 #define MAX_SIZE 100
+#define BUFFER_SIZE 1024
+char errorMessage[28] = "Ay apá te la troliaste\n";
 char *system_path_commands[] = {
     "./",
     "/usr/bin/",
@@ -24,8 +26,9 @@ typedef enum
 } builtin_command;
 void parseString(char str[], char *vector[30], int numberOfFlags);
 void cdWish(char **args);
-void pathWish(char **args);
+/* void pathWish(char **args); */
 void executer(char *cmd[]);
+void wish();
 
 const static struct
 {
@@ -55,6 +58,93 @@ builtin_command str_to_command(char *strcommand)
 int main(int argc, char *argv[])
 {
 
+    if (argc == 1)
+    {
+        wish();
+    }
+    else if (argc == 2)
+    {
+        wishBatch(argv);
+    }
+    else
+    {
+        printError();
+    }
+}
+
+void printError()
+{
+    write(STDERR_FILENO, errorMessage, strlen(errorMessage));
+    exit(1);
+}
+void wishBatch(char *argv[])
+{
+    char line[BUFFER_SIZE];
+
+    printf("Diosito %s\n", argv[1]);
+    FILE *file = NULL;
+    char *batchFile = strdup(argv[1]);
+    file = fopen(batchFile, "r");
+    if (!file)
+    {
+        printError();
+    }
+
+    while (fgets(line, BUFFER_SIZE, file))
+    {
+        char *cmd[sizeof(line)];
+        parseString(line, cmd, 20);
+        printf("Comando: %s\n", cmd[1]);
+        builtin_command command = str_to_command(line);
+        if (command != not_command)
+        {
+            switch (command)
+            {
+            case cd:
+                printf("cd executed\n");
+                cdWish(cmd);
+                break;
+            case d:
+                printf("path executed\n");
+                /*   pathWish(cmd); */
+                break;
+            case diana:
+                printf("diana executed\n");
+                /*                 pathWish(cmd); */
+                break;
+            case endup:
+                exit(0);
+                break;
+            default:
+                printError();
+            }
+        }
+        else
+        {
+            int i = 0;
+            char pathToFile[MAX_SIZE];
+            int returnValue = -1;
+
+            while (system_path_commands[i] != NULL && returnValue == -1)
+            {
+                strcpy(pathToFile, system_path_commands[i]);
+                strcat(pathToFile, cmd[0]);
+                returnValue = access(pathToFile, X_OK);
+                i++;
+            }
+            if (returnValue != -1)
+            {
+                executer(cmd);
+            }
+            else
+            {
+                printError();
+            }
+        }
+    }
+}
+void wish()
+{
     char str[MAX_SIZE];
     do
     {
@@ -81,17 +171,17 @@ int main(int argc, char *argv[])
                 break;
             case d:
                 printf("path executed\n");
-                pathWish(cmd);
+                /*   pathWish(cmd); */
                 break;
             case diana:
                 printf("diana executed\n");
-                pathWish(cmd);
+                /*                 pathWish(cmd); */
                 break;
             case endup:
                 exit(0);
                 break;
             default:
-                printf("Command not found \n");
+               printError();
             }
         }
         else
@@ -113,13 +203,12 @@ int main(int argc, char *argv[])
             }
             else
             {
-                printf("Unknow command\n");
+                printError();
             }
         }
 
     } while (1);
 }
-
 void cdWish(char **args)
 {
 
@@ -166,60 +255,44 @@ void parseString(char str[], char *vector[30], int numberOfFlags)
         vector[loop] = command[loop];
     }
 }
-void pathWish(char **args)
+
+void executer(char *cmd[])
 {
-    if (system_path_commands[0] != NULL)
 
-        system_path_commands[0] = (char **)malloc(sizeof(char *));
-    char *path_name = NULL;
+    char *auxcmd[30];
     int index = 0;
-    char **p = args;
-    while (*(++p))
+    int auxIndex = 0;
+    while (cmd[index] != NULL)
     {
-        path_name = (char *)malloc(strlen(*p) * sizeof(char));
-        stpcpy(path_name, *p);
-        system_path_commands[0][index] = path_name;
-        index++;
-        system_path_commands[0] = (char **)realloc(system_path_commands[0], (index + 1) * sizeof(char *));
-    }
-    system_path_commands[0][index] = NULL;
-}
-void executer(char *cmd[]){
-
-                char *auxcmd[30];
-                int index = 0;
-                int auxIndex = 0;
-                while (cmd[index] != NULL)
+        if (!strcmp(cmd[index], "&") || cmd[index + 1] == NULL)
+        {
+            int rc = fork();
+            if (rc < 0)
+            {
+                fprintf(stderr, "fork failed\n");
+                exit(1);
+            }
+            else if (rc == 0)
+            {
+                if (cmd[index + 1] == NULL)
                 {
-                    if (!strcmp(cmd[index], "&") || cmd[index + 1] == NULL)
-                    {
-                        int rc = fork();
-                        if (rc < 0)
-                        {
-                            fprintf(stderr, "fork failed\n");
-                            exit(1);
-                        }
-                        else if (rc == 0)
-                        {
-                            if (cmd[index + 1] == NULL)
-                            {
-                                auxcmd[auxIndex] = cmd[index];
-                                auxIndex++;
-                            }
-                            auxcmd[auxIndex] = NULL;
-                            execvp(auxcmd[0], auxcmd); // runs word count
-                        }
-                        else
-                        {
-                            wait(NULL);
-                            auxIndex = 0;
-                        }
-                    }
-                    else
-                    {
-                        auxcmd[auxIndex] = cmd[index];
-                        auxIndex++;
-                    }
-                    index++;
+                    auxcmd[auxIndex] = cmd[index];
+                    auxIndex++;
                 }
+                auxcmd[auxIndex] = NULL;
+                execvp(auxcmd[0], auxcmd); // runs word count
+            }
+            else
+            {
+                wait(NULL);
+                auxIndex = 0;
+            }
+        }
+        else
+        {
+            auxcmd[auxIndex] = cmd[index];
+            auxIndex++;
+        }
+        index++;
+    }
 }
