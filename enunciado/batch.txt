@@ -1,4 +1,5 @@
-mkdir ayyaa & ls -a
-cd ./ayyaa
+mkdir bisho & ls -a
+cd ./bisho
 cd ..
 ls
+path ./siuuuuuuuuuuu
