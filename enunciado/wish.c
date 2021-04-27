@@ -28,6 +28,9 @@ void printError();
 void executer(char *cmd[]);
 void wish();
 void pathWish(char *system_path_commands[], char *cmd[]);
+void wishBatch(char *argv[]);
+void printError();
+void parseLine(char line[], char *vector[30], int numberOfFlags);
 
 const static struct
 {
@@ -70,6 +73,28 @@ int main(int argc, char *argv[])
     }
 }
 
+void parseLine(char line[], char *vector[30], int numberOfFlags)
+{
+
+    if (line[0] != '\0' && line[0] != '\n')
+    {
+        char *command[30];
+        command[0] = strtok(line, " \t\n");
+        int p = 0;
+        while (command[p] != NULL)
+        {
+            p++;
+            command[p] = strtok(NULL, " \n\t");
+        }
+        command[p + 1] = NULL;
+
+        for (int loop = 0; loop < numberOfFlags; loop++)
+    {
+        vector[loop] = command[loop];
+    }
+    }
+    
+}
 void printError()
 {
     write(STDERR_FILENO, errorMessage, strlen(errorMessage));
@@ -90,7 +115,9 @@ void wishBatch(char *argv[])
     while (fgets(line, BUFFER_SIZE, file))
     {
         char *cmd[sizeof(line)];
-        parseString(line, cmd, 20);
+
+        parseLine(line, cmd, 20);
+        printf("Comando: %s\n", cmd[0]);
         builtin_command command = str_to_command(line);
         if (command != not_command)
         {
