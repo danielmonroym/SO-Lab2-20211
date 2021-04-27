@@ -8,8 +8,8 @@
 
 #define MAX_SIZE 100
 #define BUFFER_SIZE 1024
-char errorMessage[28] = "Ay apá te la troliaste\n";
-char *system_path_commands[] = {
+char errorMessage[28] = "An error has occurred\n";
+char *system_path_commands[30] = {
     "./",
     "/usr/bin/",
     "/bin/",
@@ -17,37 +17,34 @@ char *system_path_commands[] = {
 typedef enum
 {
     cd,
-    abril,
-    diana,
     endup,
-    d,
+    path,
     not_command,
-    ls,
 } builtin_command;
 void parseString(char str[], char *vector[30], int numberOfFlags);
 void cdWish(char **args);
-/* void pathWish(char **args); */
+void wishBatch(char *argv[]);
+void printError();
 void executer(char *cmd[]);
 void wish();
+void pathWish(char *system_path_commands[], char *cmd[]);
 void wishBatch(char *argv[]);
 void printError();
 void parseLine(char line[], char *vector[30], int numberOfFlags);
+
 const static struct
 {
     builtin_command command;
     char *string_command;
 } commands[] = {
     {cd, "cd"},
-    {abril, "abril"},
-    {diana, "diana"},
     {endup, "exit"},
-    {d, "d"},
-    {ls, "ls"},
+    {path, "path"},
 };
 
 builtin_command str_to_command(char *strcommand)
 {
-    for (int i = 0; i < 4; i++)
+    for (int i = 0; i < 3; i++)
     {
         if (!strcmp(strcommand, commands[i].string_command))
         {
@@ -62,10 +59,12 @@ int main(int argc, char *argv[])
 
     if (argc == 1)
     {
+
         wish();
     }
     else if (argc == 2)
     {
+
         wishBatch(argv);
     }
     else
@@ -99,24 +98,24 @@ void parseLine(char line[], char *vector[30], int numberOfFlags)
 void printError()
 {
     write(STDERR_FILENO, errorMessage, strlen(errorMessage));
-    exit(1);
 }
 void wishBatch(char *argv[])
 {
     char line[BUFFER_SIZE];
 
-    printf("Diosito %s\n", argv[1]);
     FILE *file = NULL;
     char *batchFile = strdup(argv[1]);
     file = fopen(batchFile, "r");
     if (!file)
     {
         printError();
+        exit(1);
     }
 
     while (fgets(line, BUFFER_SIZE, file))
     {
         char *cmd[sizeof(line)];
+
         parseLine(line, cmd, 20);
         printf("Comando: %s\n", cmd[0]);
         builtin_command command = str_to_command(line);
@@ -128,13 +127,14 @@ void wishBatch(char *argv[])
                 printf("cd executed\n");
                 cdWish(cmd);
                 break;
-            case d:
-                printf("path executed\n");
-                /*   pathWish(cmd); */
-                break;
-            case diana:
-                printf("diana executed\n");
-                /*                 pathWish(cmd); */
+            case path:
+                pathWish(system_path_commands, cmd);
+                  int directions = 0;
+                while (system_path_commands[directions] != NULL)
+                {
+                    printf("path: %s \n", system_path_commands[directions]);
+                    directions++;
+                }
                 break;
             case endup:
                 exit(0);
@@ -172,7 +172,7 @@ void wish()
     char str[MAX_SIZE];
     do
     {
-        printf("wish>>");
+        printf("wish>> ");
         fgets(str, MAX_SIZE, stdin);
         char *p = str;
         while (*p != '\n')
@@ -182,24 +182,27 @@ void wish()
         *p = '\0';
 
         char *cmd[sizeof(str)];
+
         parseString(str, cmd, 20);
 
         builtin_command command = str_to_command(str);
+
         if (command != not_command)
         {
+
             switch (command)
             {
             case cd:
-                printf("cd executed\n");
                 cdWish(cmd);
                 break;
-            case d:
-                printf("path executed\n");
-                /*   pathWish(cmd); */
-                break;
-            case diana:
-                printf("diana executed\n");
-                /*                 pathWish(cmd); */
+            case path:
+                pathWish(system_path_commands, cmd);
+                  int directions = 0;
+                while (system_path_commands[directions] != NULL)
+                {
+                    printf("path: %s \n", system_path_commands[directions]);
+                    directions++;
+                }
                 break;
             case endup:
                 exit(0);
@@ -210,15 +213,23 @@ void wish()
         }
         else
         {
+
             int i = 0;
             char pathToFile[MAX_SIZE];
             int returnValue = -1;
 
             while (system_path_commands[i] != NULL && returnValue == -1)
             {
+
                 strcpy(pathToFile, system_path_commands[i]);
-                strcat(pathToFile, cmd[0]);
+
+                if (cmd[0] != NULL)
+                {
+                    strcat(pathToFile, cmd[0]);
+                }
+
                 returnValue = access(pathToFile, X_OK);
+
                 i++;
             }
             if (returnValue != -1)
@@ -260,6 +271,7 @@ void cdWish(char **args)
         printf("Error en la ruta especificada\n");
     }
 };
+
 void parseString(char str[], char *vector[30], int numberOfFlags)
 {
 
@@ -319,4 +331,32 @@ void executer(char *cmd[])
         }
         index++;
     }
+}
+void pathWish(char *system_path_commands[], char *cmd[])
+{
+   int index = 1;
+  while (cmd[index] != NULL)
+  {    
+    int y = 0;
+    int equal = 0;
+    while (system_path_commands[y] != NULL)
+    {    
+      equal = strcmp(cmd[index], system_path_commands[y]);
+
+      if (equal == 0)
+      {
+        break;
+      }
+      if (system_path_commands[y + 1] == NULL && equal != 0)
+      {
+        system_path_commands[y + 1] = cmd[index];
+        system_path_commands[y + 2] = NULL;
+        equal = 0;
+        break;
+      }
+      y++;
+    }
+    index++;
+  }
+
 }
