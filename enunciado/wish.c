@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <string.h>
+#include <fcntl.h>
 
 #define MAX_SIZE 100
 #define BUFFER_SIZE 1024
@@ -31,6 +32,7 @@ void pathWish(char *system_path_commands[], char *cmd[]);
 void wishBatch(char *argv[]);
 void printError();
 void parseLine(char line[], char *vector[30], int numberOfFlags);
+int wish_launch_redirect(char **args, char *file);
 
 const static struct
 {
@@ -89,11 +91,10 @@ void parseLine(char line[], char *vector[30], int numberOfFlags)
         command[p + 1] = NULL;
 
         for (int loop = 0; loop < numberOfFlags; loop++)
-    {
-        vector[loop] = command[loop];
+        {
+            vector[loop] = command[loop];
+        }
     }
-    }
-    
 }
 void printError()
 {
@@ -129,7 +130,7 @@ void wishBatch(char *argv[])
                 break;
             case path:
                 pathWish(system_path_commands, cmd);
-                  int directions = 0;
+                int directions = 0;
                 while (system_path_commands[directions] != NULL)
                 {
                     printf("path: %s \n", system_path_commands[directions]);
@@ -197,7 +198,7 @@ void wish()
                 break;
             case path:
                 pathWish(system_path_commands, cmd);
-                  int directions = 0;
+                int directions = 0;
                 while (system_path_commands[directions] != NULL)
                 {
                     printf("path: %s \n", system_path_commands[directions]);
@@ -234,7 +235,52 @@ void wish()
             }
             if (returnValue != -1)
             {
-                executer(cmd);
+                int z = 0;
+                int x = 0;
+                int zaux = 0;
+                do
+                {
+                    if (strcmp(cmd[z], ">") == 0)
+                    {
+                        x = x + 1;
+                        zaux = z;
+                    }
+                    else if (strchr(cmd[z], '>') != NULL)
+                    {
+                        x = x + 2;
+                    }
+                    z++;
+                } while (cmd[z] != NULL);
+                if (x== 0)
+                {
+                    //no encontro ningun >
+                     executer(cmd);
+                }
+                else if (x == 1)
+                {
+                    //encontro 1 >
+                    if (cmd[zaux + 1] == NULL)
+                    {
+            
+                        printError();
+                    }
+                    else if (cmd[zaux + 2] != NULL)
+                    {
+                        printError();
+
+                    }
+                    else
+                    {  
+                        
+                        char *file = malloc(MAX_SIZE * sizeof(char *));
+                        strcpy(file, cmd[zaux + 1]);
+                        cmd[zaux] = NULL;
+                        cmd[zaux + 1] = NULL;
+                        wish_launch_redirect(cmd, file);
+                    }
+                }
+
+               
             }
             else
             {
@@ -243,6 +289,30 @@ void wish()
         }
 
     } while (1);
+}
+
+int wish_launch_redirect(char **args, char *file){
+    pid_t pid;
+    pid = fork();
+    if (pid == 0) {
+    // Child process
+        int fd = open(file, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+
+        dup2(fd, 1);   // make stdout go to file
+        dup2(fd, 2);   // make stderr go to file - you may choose to not do this
+                   // or perhaps send stderr to another file
+        close(fd);
+
+        execvp(args[0], args);
+    } else if (pid < 0) {
+        // Error forking
+
+        printError();
+    } else {
+        // Parent process
+       wait(NULL);
+    }
+    return 1;
 }
 void cdWish(char **args)
 {
@@ -334,29 +404,28 @@ void executer(char *cmd[])
 }
 void pathWish(char *system_path_commands[], char *cmd[])
 {
-   int index = 1;
-  while (cmd[index] != NULL)
-  {    
-    int y = 0;
-    int equal = 0;
-    while (system_path_commands[y] != NULL)
-    {    
-      equal = strcmp(cmd[index], system_path_commands[y]);
+    int index = 1;
+    while (cmd[index] != NULL)
+    {
+        int y = 0;
+        int equal = 0;
+        while (system_path_commands[y] != NULL)
+        {
+            equal = strcmp(cmd[index], system_path_commands[y]);
 
-      if (equal == 0)
-      {
-        break;
-      }
-      if (system_path_commands[y + 1] == NULL && equal != 0)
-      {
-        system_path_commands[y + 1] = cmd[index];
-        system_path_commands[y + 2] = NULL;
-        equal = 0;
-        break;
-      }
-      y++;
+            if (equal == 0)
+            {
+                break;
+            }
+            if (system_path_commands[y + 1] == NULL && equal != 0)
+            {
+                system_path_commands[y + 1] = cmd[index];
+                system_path_commands[y + 2] = NULL;
+                equal = 0;
+                break;
+            }
+            y++;
+        }
+        index++;
     }
-    index++;
-  }
-
 }
