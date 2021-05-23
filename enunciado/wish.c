@@ -118,14 +118,12 @@ void wishBatch(char *argv[])
         char *cmd[sizeof(line)];
 
         parseLine(line, cmd, 20);
-        printf("Comando: %s\n", cmd[0]);
         builtin_command command = str_to_command(line);
         if (command != not_command)
         {
             switch (command)
             {
             case cd:
-                printf("cd executed\n");
                 cdWish(cmd);
                 break;
             case path:
@@ -133,12 +131,18 @@ void wishBatch(char *argv[])
                 int directions = 0;
                 while (system_path_commands[directions] != NULL)
                 {
-                    printf("path: %s \n", system_path_commands[directions]);
                     directions++;
                 }
                 break;
             case endup:
-                exit(0);
+                if (cmd[1] != NULL)
+                {
+                    printError();
+                }
+                else
+                {
+                    exit(0);
+                }
                 break;
             default:
                 printError();
@@ -170,23 +174,32 @@ void wishBatch(char *argv[])
 }
 void wish()
 {
+    
     char str[MAX_SIZE];
     do
     {
         printf("wish>> ");
+
         fgets(str, MAX_SIZE, stdin);
+        
+
         char *p = str;
         while (*p != '\n')
         {
             p++;
         }
         *p = '\0';
+       
+             
+        
 
         char *cmd[sizeof(str)];
 
         parseString(str, cmd, 20);
 
         builtin_command command = str_to_command(str);
+     
+        if (str[0] != '\0' ){
 
         if (command != not_command)
         {
@@ -199,14 +212,21 @@ void wish()
             case path:
                 pathWish(system_path_commands, cmd);
                 int directions = 0;
+
                 while (system_path_commands[directions] != NULL)
                 {
-                    printf("path: %s \n", system_path_commands[directions]);
                     directions++;
                 }
                 break;
             case endup:
-                exit(0);
+                if (cmd[1] != NULL)
+                {
+                    printError();
+                }
+                else
+                {
+                    exit(0);
+                }
                 break;
             default:
                 printError();
@@ -218,7 +238,6 @@ void wish()
             int i = 0;
             char pathToFile[MAX_SIZE];
             int returnValue = -1;
-
             while (system_path_commands[i] != NULL && returnValue == -1)
             {
 
@@ -287,7 +306,7 @@ void wish()
                 printError();
             }
         }
-
+             }
     } while (1);
 }
 
@@ -321,13 +340,12 @@ void cdWish(char **args)
     {
         {
             if (chdir(args[1]) == -1)
-                printf("Error en la ruta especificada\n");
+                printError();
 
             char cwd[1024];
 
             if (getcwd(cwd, sizeof(cwd)) != NULL)
             {
-                fprintf(stdout, "Directorio actual: %s\n", cwd);
             }
             else
             {
@@ -338,7 +356,8 @@ void cdWish(char **args)
     else
     {
 
-        printf("Error en la ruta especificada\n");
+                       printError();
+
     }
 };
 
@@ -405,6 +424,7 @@ void executer(char *cmd[])
 void pathWish(char *system_path_commands[], char *cmd[])
 {
     int index = 1;
+   
     while (cmd[index] != NULL)
     {
         int y = 0;
@@ -417,15 +437,18 @@ void pathWish(char *system_path_commands[], char *cmd[])
             {
                 break;
             }
-            if (system_path_commands[y + 1] == NULL && equal != 0)
-            {
+            
+            if (system_path_commands[y + 1] == NULL)
+            {   
+
                 system_path_commands[y + 1] = cmd[index];
                 system_path_commands[y + 2] = NULL;
-                equal = 0;
                 break;
             }
             y++;
         }
         index++;
     }
+    
+    
 }
